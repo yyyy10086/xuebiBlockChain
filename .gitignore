@@ -1,0 +1,41 @@
+# 敏感配置文件
+application-prod.yaml
+application-dev.yaml
+.env
+*.log
+
+# IDE 配置
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# 编译产物
+target/
+
+# 本地数据库/缓存
+CAMPUS_LEVELDB/
+XUEBI_LEVLEDB/
+*.db
+*.sst
+CURRENT
+LOCK
+MANIFEST-*
+
+# Fabric 网络证书与私钥（绝对不能提交！）
+**/*_sk
+**/keystore/
+**/signcerts/
+**/tlscacerts/
+**/crypto-config/
+
+# 临时文件
+*.tmp
+*.bak
+*.zip.001
+
+# 多余模块（如果不需要提交）
+user-service/
+xuebi-api/
+xuebi-common/
+backend/

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="yin.xuebiblockchain.Mapper.SignInMapper">
+    <insert id="insertRecord">
+        INSERT INTO sign_in (user_id, sign_date, points_awarded)
+        VALUES (#{userId}, #{signDate}, #{points})
+    </insert>
+
+    <select id="countToday" resultType="int">
+        SELECT COUNT(*) FROM sign_in WHERE user_id = #{userId} AND sign_date = #{signDate}
+    </select>
+</mapper>

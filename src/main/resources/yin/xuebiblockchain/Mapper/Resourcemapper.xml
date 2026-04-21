@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="yin.xuebiblockchain.Mapper.ResourceMapper">
+
+    <!-- 查询所有可借用资源（关键：返回 ownerAddress） -->
+    <select id="findAvailableResources" resultType="yin.xuebiblockchain.Pojo.ResourceDTO">
+        SELECT
+            r.id,
+            r.name,
+            r.description,
+            r.resource_type AS resourceType,
+            r.category,
+            r.points_cost AS pointsCost,
+            r.status,
+            r.owner_id AS ownerId,
+            u.nick_name AS ownerName,
+            u.public_key AS ownerAddress,
+            r.image_url AS imageUrl,
+            r.borrow_count AS borrowCount,
+            r.create_time AS createTime
+        FROM resource r
+                 LEFT JOIN user u ON r.owner_id = u.id
+        WHERE r.status = 'AVAILABLE'
+          AND u.public_key IS NOT NULL
+        ORDER BY r.borrow_count DESC, r.create_time DESC
+    </select>
+
+    <!-- 热门资源 -->
+    <select id="findHotResources" resultType="yin.xuebiblockchain.Pojo.ResourceDTO">
+        SELECT
+            r.id,
+            r.name,
+            r.description,
+            r.resource_type AS resourceType,
+            r.category,
+            r.points_cost AS pointsCost,
+            r.status,
+            r.owner_id AS ownerId,
+            u.nick_name AS ownerName,
+            u.public_key AS ownerAddress,
+            r.image_url AS imageUrl,
+            r.borrow_count AS borrowCount,
+            r.create_time AS createTime
+        FROM resource r
+                 LEFT JOIN user u ON r.owner_id = u.id
+        WHERE r.status = 'AVAILABLE' AND u.public_key IS NOT NULL
+        ORDER BY r.borrow_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 搜索资源 -->
+    <select id="searchResources" resultType="yin.xuebiblockchain.Pojo.ResourceDTO">
+        SELECT
+            r.id,
+            r.name,
+            r.description,
+            r.resource_type AS resourceType,
+            r.category,
+            r.points_cost AS pointsCost,
+            r.status,
+            r.owner_id AS ownerId,
+            u.nick_name AS ownerName,
+            u.public_key AS ownerAddress,
+            r.image_url AS imageUrl,
+            r.borrow_count AS borrowCount,
+            r.create_time AS createTime
+        FROM resource r
+                 LEFT JOIN user u ON r.owner_id = u.id
+        WHERE r.status = 'AVAILABLE'
+          AND u.public_key IS NOT NULL
+          AND (r.name LIKE CONCAT('%', #{keyword}, '%')
+            OR r.description LIKE CONCAT('%', #{keyword}, '%'))
+        ORDER BY r.borrow_count DESC
+    </select>
+
+    <!-- 根据ID查询单个资源 -->
+    <select id="findById" resultType="yin.xuebiblockchain.Pojo.Resource">
+        SELECT * FROM resource WHERE id = #{id}
+    </select>
+
+    <!-- 查询我发布的资源 -->
+    <select id="findByOwnerId" resultType="yin.xuebiblockchain.Pojo.Resource">
+        SELECT * FROM resource WHERE owner_id = #{ownerId}
+    </select>
+
+    <!-- 查询我借用的资源 -->
+    <select id="findBorrowedByUser" resultType="yin.xuebiblockchain.Pojo.ResourceDTO">
+        SELECT r.*,
+               u.nick_name AS ownerName,
+               u.public_key AS ownerAddress
+        FROM resource r
+                 LEFT JOIN user u ON r.owner_id = u.id
+        WHERE r.borrower_id = #{borrowerId}
+          AND r.status IN ('PENDING', 'LENT')
+    </select>
+
+    <!-- 插入新资源 -->
+    <insert id="insertResource" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO resource (name, description, resource_type, category, points_cost,
+                              status, owner_id, owner_address, borrow_count, create_time)
+        VALUES (#{name}, #{description}, #{resourceType}, #{category}, #{pointsCost},
+                'AVAILABLE', #{ownerId}, #{ownerAddress}, 0, NOW())
+    </insert>
+
+    <!-- 更新资源状态 -->
+    <update id="updateResourceStatus">
+        UPDATE resource
+        SET status = #{status},
+            borrower_id = #{borrowerId},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 增加借用次数 -->
+    <update id="incrementBorrowCount">
+        UPDATE resource SET borrow_count = borrow_count + 1 WHERE id = #{id}
+    </update>
+
+    <!-- 新增：查询待确认的资源（用于分享者查看） -->
+    <select id="findPendingByOwnerId" resultType="yin.xuebiblockchain.Pojo.Resource">
+        SELECT * FROM resource WHERE owner_id = #{ownerId} AND status = 'PENDING'
+    </select>
+
+    <update id="updateResourceStatusAndBorrowEndTime">
+        UPDATE resource
+        SET status = #{status},
+            borrower_id = #{borrowerId},
+            borrow_end_time = #{borrowEndTime},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="findAllResources" resultType="yin.xuebiblockchain.Pojo.ResourceDTO">
+        SELECT r.id, r.name, r.description, r.resource_type AS resourceType,
+               r.category, r.points_cost AS pointsCost, r.status,
+               r.owner_id AS ownerId, u.nick_name AS ownerName,
+               u.public_key AS ownerAddress, r.image_url AS imageUrl,
+               r.borrow_count AS borrowCount, r.create_time AS createTime
+        FROM resource r
+                 LEFT JOIN user u ON r.owner_id = u.id
+        WHERE r.status != 'OFFLINE'
+        ORDER BY r.create_time DESC
+    </select>
+</mapper>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="yin.xuebiblockchain.Mapper.LoginMapper">
+    <!--    User selectByPhone(@Param("phone") String phone);-->
+    <select id="selectByPhone" resultType="yin.xuebiblockchain.Pojo.User">
+        select id, phone, password, nick_name AS nickName, icon,
+               public_key AS publicKey, balance, student_id AS studentId
+        from user where phone = #{phone};
+    </select>
+<!--    Integer save(@Param("user") User user);-->
+    <insert id="save" parameterType="yin.xuebiblockchain.Pojo.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user (phone, nick_name, balance, password, create_time)
+        VALUES (#{phone}, #{nickName}, #{balance}, #{password}, NOW())
+    </insert>
+</mapper>

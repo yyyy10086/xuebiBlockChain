@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="yin.xuebiblockchain.Mapper.TransactionMapper">
+    <!--    交易：扣除发送方金额  -->
+    <update id="sendAmount">
+        update xuebiChain.user_account set money = money - #{amount}  where public_key = #{public_key} and money >= #{amount} and is_deleted = 0
+    </update>
+
+    <!--    交易：增加接收方金额  -->
+    <update id="addAmount">
+        update xuebiChain.user_account set money = money + #{amount}  where public_key = #{public_key}  and is_deleted = 0
+    </update>
+
+    <update id="deductPoints">
+        UPDATE user
+        SET balance = balance - #{amount}
+        WHERE public_key = #{publicKey} AND balance >= #{amount}
+    </update>
+
+    <update id="addPoints">
+        UPDATE user
+        SET balance = balance + #{amount}
+        WHERE public_key = #{publicKey}
+    </update>
+
+    <select id="getBalance" resultType="java.lang.Long">
+        SELECT balance FROM user WHERE public_key = #{publicKey}
+    </select>
+
+    <insert id="saveTransactionRecord">
+        INSERT INTO transaction_record
+        (sender_address, recipient_address, amount, timestamp,
+         resource_id, resource_name, resource_type, record_type,
+         tx_hash, block_number)
+        VALUES
+            (#{senderAddress}, #{recipientAddress}, #{amount}, #{timestamp},
+             #{resourceId}, #{resourceName}, #{resourceType}, #{recordType},
+             #{txHash}, #{blockNumber})
+    </insert>
+
+    <!-- TransactionMapper.xml -->
+    <select id="findByAddress" resultType="java.util.HashMap">
+        SELECT
+            sender_address AS senderAddress,
+            recipient_address AS recipientAddress,
+            amount,
+            timestamp,
+            resource_id AS resourceId,
+            resource_name AS resourceName,
+            record_type AS recordType,
+            tx_hash AS txHash,
+            block_number AS blockNumber
+        FROM transaction_record
+        WHERE sender_address = #{address} OR recipient_address = #{address}
+        ORDER BY timestamp DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="findByResourceId" resultType="java.util.Map">
+        SELECT * FROM transaction_record
+        WHERE resource_id = #{resourceId}
+        ORDER BY timestamp ASC
+    </select>
+
+    <update id="updateBlockNumber">
+        UPDATE transaction_record
+        SET block_number = #{blockNumber}
+        WHERE tx_hash = #{txHash}
+    </update>
+</mapper>

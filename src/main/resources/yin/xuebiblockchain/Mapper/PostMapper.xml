@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="yin.xuebiblockchain.Mapper.PostMapper">
+
+    <!-- 查询帖子列表，聚合互动数据 -->
+    <select id="selectPostListWithDetails" resultType="yin.xuebiblockchain.Pojo.PostVO">
+        SELECT
+        p.id,
+        p.user_id AS userId,
+        u.nick_name AS userName,
+        u.icon AS userIcon,   <!-- 新增 -->
+        p.post_title AS postTitle,
+        p.post_content AS postContent,
+        p.update_time AS updateTime,
+        COALESCE(like_data.number, 0) AS likeCount,
+        COALESCE(view_data.number, 0) AS viewCount,
+        COALESCE(share_data.number, 0) AS shareCount,
+        0 AS commentCount,
+        IF(ul.id IS NOT NULL, TRUE, FALSE) AS isLiked
+        FROM post p
+        LEFT JOIN user u ON p.user_id = u.id
+        LEFT JOIN (
+        SELECT post_id, number FROM post_data WHERE status = '01' AND is_deleted = 0
+        ) like_data ON p.id = like_data.post_id
+        LEFT JOIN (
+        SELECT post_id, number FROM post_data WHERE status = '02' AND is_deleted = 0
+        ) view_data ON p.id = view_data.post_id
+        LEFT JOIN (
+        SELECT post_id, number FROM post_data WHERE status = '03' AND is_deleted = 0
+        ) share_data ON p.id = share_data.post_id
+        LEFT JOIN user_like ul ON ul.post_id = p.id AND ul.user_id = #{currentUserId}
+        WHERE p.is_deleted = 0
+        ORDER BY p.update_time DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 插入帖子，返回自增ID -->
+    <insert id="insertPost" parameterType="yin.xuebiblockchain.Pojo.Post" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO post (user_id, post_title, post_content, creat_time, update_time)
+        VALUES (#{userId}, #{postTitle}, #{postContent}, NOW(), NOW())
+    </insert>
+
+    <!-- 批量初始化互动数据（点赞、浏览、转发） -->
+    <insert id="insertPostDataBatch">
+        INSERT INTO post_data (post_id, status, number) VALUES
+                                                            (#{postId}, '01', 0),
+                                                            (#{postId}, '02', 0),
+                                                            (#{postId}, '03', 0)
+    </insert>
+
+    <!-- 更新互动数量（delta 可为正或负） -->
+    <update id="incrementPostData">
+        UPDATE post_data
+        SET number = number + #{delta}
+        WHERE post_id = #{postId} AND status = #{status} AND is_deleted = 0
+    </update>
+
+    <!-- 查询互动数量 -->
+    <select id="getPostDataNumber" resultType="integer">
+        SELECT number FROM post_data
+        WHERE post_id = #{postId} AND status = #{status} AND is_deleted = 0
+    </select>
+
+    <!-- 用户点赞记录 -->
+    <insert id="insertUserLike">
+        INSERT INTO user_like (user_id, post_id) VALUES (#{userId}, #{postId})
+    </insert>
+    <delete id="deleteUserLike">
+        DELETE FROM user_like WHERE user_id = #{userId} AND post_id = #{postId}
+    </delete>
+
+</mapper>
