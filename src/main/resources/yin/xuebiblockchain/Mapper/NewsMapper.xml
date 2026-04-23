@@ -15,4 +15,19 @@
         ORDER BY create_time DESC
     </select>
 
+    <insert id="insertNews" parameterType="yin.xuebiblockchain.Pojo.NewsDTO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO news (title, content, source, image_url, author_id, author_name, create_time)
+        VALUES (#{title}, #{content}, #{source}, #{imageUrl}, #{authorId}, #{authorName}, NOW())
+    </insert>
+
+    <update id="updateNews">
+        UPDATE news
+        SET title = #{title}, content = #{content}, source = #{source}, image_url = #{imageUrl}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteNews">
+        DELETE FROM news WHERE id = #{id}
+    </delete>
+
 </mapper>

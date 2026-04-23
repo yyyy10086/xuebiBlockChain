@@ -136,4 +136,11 @@ public class ResourceController {
     public Result listAllResources() {
         return resourceService.listAllResources();
     }
+
+    @DeleteMapping("/my/{id}")
+    public Result deleteMyResource(@PathVariable Long id) {
+        UserDTO user = UserHolder.getUser();
+        if (user == null) return Result.error("请先登录");
+        return resourceService.deleteMyResource(id, user.getId());
+    }
 }

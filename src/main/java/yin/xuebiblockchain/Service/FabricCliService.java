@@ -158,10 +158,13 @@ public class FabricCliService {
             String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             String error = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
 
-            if (process.exitValue() != 0) {
-                log.error("命令执行失败，exitCode: {}, error: {}", process.exitValue(), error);
-                throw new RuntimeException("区块链命令执行失败: " + error);
+            if (process.exitValue() != 0 || output.contains("Error:") || output.contains("endorsement failure")) {
+                String errorMessage = error.isEmpty() ? output : error;
+                log.error("链码命令失败，exitCode: {}, 输出: {}", process.exitValue(), errorMessage);
+                throw new RuntimeException("区块链命令执行失败: " + errorMessage);
             }
+
+
 
             return extractJsonFromOutput(output);
         } catch (Exception e) {
@@ -187,6 +190,9 @@ public class FabricCliService {
                 return line;
             }
         }
+        if (output.contains("Error:") || output.contains("endorsement failure")) {
+            throw new RuntimeException("链码调用失败，原始输出: " + output);
+        }
         return output;
     }
 
@@ -195,14 +201,76 @@ public class FabricCliService {
         return executeInvoke("PublishResource", resourceId, name, owner, String.valueOf(pointsCost), metadata);
     }
 
+    /**
+     * 借用申请（调用链码 RequestBorrow）
+     * @param resourceId 资源ID
+     * @param borrower 借用者公钥地址
+     */
     public String requestBorrow(String resourceId, String borrower) {
         return executeInvoke("RequestBorrow", resourceId, borrower);
     }
 
-    public String confirmReturn(String resourceId) {
-        return executeInvoke("ConfirmReturn", resourceId);
+    /**
+     * 确认收到（调用链码 ConfirmReceived）
+     * @param resourceId 资源ID
+     */
+    public String confirmReceived(String resourceId) throws Exception {
+        return invokeAndWait("LENT", "ConfirmReceived", resourceId);
     }
 
+
+
+    /**
+     * 轮询等待资源状态变为预期值
+     * @param resourceId 资源ID
+     * @param expectedStatus 期望的状态 (LENT / AVAILABLE)
+     * @param timeoutSeconds 超时秒数
+     */
+    private void waitForStatusChange(String resourceId, String expectedStatus, int timeoutSeconds) throws Exception {
+        long deadline = System.currentTimeMillis() + timeoutSeconds * 1000L;
+        String currentStatus = null;
+        while (System.currentTimeMillis() < deadline) {
+            Thread.sleep(1500); // 每 1.5 秒查询一次
+            String json = readResource(resourceId);
+            if (json != null && !json.isEmpty()) {
+                // 简单提取 status 字段
+                int idx = json.indexOf("\"status\":\"");
+                if (idx != -1) {
+                    int start = idx + 10;
+                    int end = json.indexOf("\"", start);
+                    if (end != -1) {
+                        currentStatus = json.substring(start, end);
+                        if (expectedStatus.equals(currentStatus)) {
+                            log.info("资源 {} 状态已更新为 {}", resourceId, expectedStatus);
+                            return;
+                        }
+                    }
+                }
+            }
+            log.debug("等待资源 {} 状态变为 {}，当前: {}", resourceId, expectedStatus, currentStatus);
+        }
+        throw new RuntimeException(String.format("等待资源 %s 状态变为 %s 超时，当前状态: %s", resourceId, expectedStatus, currentStatus));
+    }
+
+    /**
+     * 执行 invoke 并等待链上状态变更为预期值
+     */
+    private String invokeAndWait(String expectedStatus, String function, String... args) throws Exception {
+        String result = executeInvoke(function, args);
+        // 第一个参数必须是 resourceId（根据链码方法约定）
+        if (args.length > 0) {
+            waitForStatusChange(args[0], expectedStatus, 25); // 最多等 25 秒
+        }
+        return result;
+    }
+
+    /**
+     * 归还资源（调用链码 ConfirmReturn）
+     * @param resourceId 资源ID
+     */
+    public String confirmReturn(String resourceId) throws Exception {
+        return invokeAndWait("AVAILABLE", "ConfirmReturn", resourceId);
+    }
     public String readResource(String resourceId) {
         return executeQuery("ReadResource", resourceId);
     }

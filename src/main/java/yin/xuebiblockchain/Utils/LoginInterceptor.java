@@ -72,6 +72,7 @@ public class LoginInterceptor implements HandlerInterceptor {
         userDTO.setBalance(user.getBalance());           // 关键：这里必须有值
         userDTO.setPublicKey(user.getPublicKey());
         userDTO.setStudentId(user.getStudentId());
+        userDTO.setRole(user.getRole());
         UserHolder.saveUser(userDTO);
         userDTO.setAddress(user.getPublicKey());
 

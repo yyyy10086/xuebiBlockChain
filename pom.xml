@@ -32,6 +32,16 @@
         <java.version>17</java.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>aliyun</id>
+            <name>Aliyun Maven Central</name>
+            <url>https://maven.aliyun.com/repository/public</url>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+    </repositories>
+
 
 
     <dependencies>
@@ -87,20 +97,6 @@
             <version>6.1.6.RELEASE</version>
         </dependency>
 
-
-        <!-- Fabric Gateway Client API (官方推荐，兼容 Fabric v3.0.0) -->
-        <dependency>
-            <groupId>org.hyperledger.fabric</groupId>
-            <artifactId>fabric-gateway</artifactId>
-            <version>1.8.0</version>
-        </dependency>
-
-        <!-- gRPC 网络通信（SDK 内部需要） -->
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-netty-shaded</artifactId>
-            <version>1.59.0</version>
-        </dependency>
 
         <!-- JSON 处理 -->
         <dependency>

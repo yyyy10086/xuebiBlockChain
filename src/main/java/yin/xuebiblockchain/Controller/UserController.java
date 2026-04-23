@@ -131,4 +131,11 @@ public class UserController {
         userService.updateNickName(user.getId(), nickName);
         return Result.success();
     }
+
+    @PutMapping("/password")
+    public Result updatePassword(@RequestParam String oldPassword, @RequestParam String newPassword) {
+        UserDTO user = UserHolder.getUser();
+        if (user == null) return Result.error("请先登录");
+        return userService.updatePassword(user.getId(), oldPassword, newPassword);
+    }
 }

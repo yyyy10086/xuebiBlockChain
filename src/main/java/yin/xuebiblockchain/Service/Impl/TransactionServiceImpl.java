@@ -102,8 +102,7 @@ public class TransactionServiceImpl implements TransactionService {
             } else if (Transaction.TYPE_CONFIRM_RECEIVED.equals(recordType)) {
                 businessResult = handleConfirmReceived(resourceId, senderAddress, recipientAddress, amount);
             } else if (Transaction.TYPE_RETURN.equals(recordType)) {
-                // ========== 归还处理：先检查链上状态，但无论如何都更新数据库 ==========
-                // 检查链上状态，决定是否跳过链码调用
+                // 归还处理：先检查链上状态，决定是否跳过链码调用
                 try {
                     String chainResourceJson = fabricCliService.readResource(String.valueOf(resourceId));
                     if (chainResourceJson != null && chainResourceJson.contains("\"status\":\"AVAILABLE\"")) {
@@ -112,9 +111,7 @@ public class TransactionServiceImpl implements TransactionService {
                     }
                 } catch (Exception e) {
                     log.warn("查询链上资源状态失败，将正常调用链码。resourceId: {}", resourceId, e);
-                    // 查询失败时不跳过链码，走正常流程
                 }
-                // 必须调用 handleReturn 更新数据库状态（状态变为 AVAILABLE，清空 borrowerId）
                 businessResult = handleReturn(resourceId);
             } else {
                 businessResult = Result.error("未知的记录类型: " + recordType);
@@ -124,20 +121,18 @@ public class TransactionServiceImpl implements TransactionService {
                 return businessResult;
             }
 
-            // ========== 上链存证（仅当需要时） ==========
+            // ========== 上链存证 ==========
             if (!skipChaincode) {
                 try {
                     String chainResult = null;
-                    if (Transaction.TYPE_CONFIRM_RECEIVED.equals(recordType)) {
+                    if (Transaction.TYPE_BORROW_REQUEST.equals(recordType)) {
                         chainResult = fabricCliService.requestBorrow(String.valueOf(resourceId), senderAddress);
+                    } else if (Transaction.TYPE_CONFIRM_RECEIVED.equals(recordType)) {
+                        // 【简洁调用】不再进行二次校验，信任 fabricCliService.confirmReceived 内部已处理状态确认
+                        chainResult = fabricCliService.confirmReceived(String.valueOf(resourceId));
                     } else if (Transaction.TYPE_RETURN.equals(recordType)) {
-                        // 二次确认（可选，增强健壮性）
-                        String chainState = fabricCliService.readResource(String.valueOf(resourceId));
-                        if (chainState != null && chainState.contains("\"status\":\"AVAILABLE\"")) {
-                            log.info("资源 {} 在链上已为 AVAILABLE（二次确认），跳过链码调用", resourceId);
-                        } else {
-                            chainResult = fabricCliService.confirmReturn(String.valueOf(resourceId));
-                        }
+                        // 【简洁调用】同理
+                        chainResult = fabricCliService.confirmReturn(String.valueOf(resourceId));
                     }
                     if (chainResult != null) {
                         log.info("链码存证成功: {}", chainResult);
@@ -195,7 +190,13 @@ public class TransactionServiceImpl implements TransactionService {
     private Result handleBorrowRequest(Long resourceId, String senderAddress, int amount) {
         yin.xuebiblockchain.Pojo.Resource resource = resourceMapper.findById(resourceId);
         if (resource == null) return Result.error("资源不存在");
-        if (resource.getOwnerAddress().equals(senderAddress)) return Result.error("不能借用自己发布的资源");
+        String ownerAddress = resource.getOwnerAddress();
+        if (ownerAddress == null || ownerAddress.isEmpty()) {
+            return Result.error("资源信息不完整，请联系管理员");
+        }
+        if (ownerAddress.equals(senderAddress)) {
+            return Result.error("不能借用自己发布的资源");
+        }
         if (!RES_STATUS_AVAILABLE.equals(resource.getStatus()))
             return Result.error("资源当前不可借用");
 

@@ -62,4 +62,6 @@ public interface Resourceservice {
     Result getResourceTrace(Long resourceId);
 
     Result listAllResources();
+
+    Result deleteMyResource(Long resourceId, Long userId);
 }

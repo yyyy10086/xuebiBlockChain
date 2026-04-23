@@ -50,6 +50,8 @@ public class User implements Serializable {
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     private String phone;
 
+    private Integer role; // 0-普通用户，1-管理员
+
     /**
      * 密码（加密存储，目前系统用验证码登录，此字段备用）
      */

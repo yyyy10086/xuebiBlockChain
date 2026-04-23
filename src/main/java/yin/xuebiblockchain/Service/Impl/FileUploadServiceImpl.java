@@ -13,60 +13,42 @@ import yin.xuebiblockchain.Pojo.Result;
 import yin.xuebiblockchain.Service.FileUploadService;
 import yin.xuebiblockchain.Utils.UserHolder;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.UUID;
 
 @Service
 public class FileUploadServiceImpl implements FileUploadService {
-    @Value("${aliyun.oss.endpoint}")
-    private String endpoint;
 
-    @Value("${aliyun.oss.access-key-id}")
-    private String accessKeyId;
-
-    @Value("${aliyun.oss.access-key-secret}")
-    private String accessKeySecret;
-
-    @Value("${aliyun.oss.bucket-name}")
-    private String bucketName;
-
-    @Value("${aliyun.oss.file-host}")
-    private String fileHost;
+    @Value("${file.upload-dir:uploads/avatars}")
+    private String uploadDir;
 
     @Resource
     private FileUploadMapper fileUploadMapper;
 
     @Override
     public Result saveIcon(MultipartFile file) {
-        // 1. 创建 OSS 客户端
-        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
-        String url = "";
+        Long userId = UserHolder.getUser() != null ? UserHolder.getUser().getId() : null;
+        if (userId == null) return Result.error("请先登录");
+
         try {
-            // 2. 获取文件上传流
-            InputStream inputStream = file.getInputStream();
+            // 1. 创建本地存储目录
+            String realDir = System.getProperty("user.dir") + "/" + uploadDir;
+            File dir = new File(realDir);
+            if (!dir.exists()) dir.mkdirs();
 
-            // 3. 生成文件名，避免重名
-            String fileName = fileHost + "/" + UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            // 2. 生成唯一文件名
+            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            File dest = new File(dir, fileName);
+            file.transferTo(dest);
 
-            // 4. 上传文件到指定 Bucket
-            ossClient.putObject(bucketName, fileName, inputStream);
+            // 3. 构造访问URL（通过静态资源映射访问）
+            String url = "/avatars/" + fileName;
 
-            // 5. 拼接文件 URL
-            url = "https://" + bucketName + "." + endpoint + "/" + fileName;
+            fileUploadMapper.save(userId, url);
+            return Result.success(url);
         } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            // 6. 关闭 OSS 客户端
-            ossClient.shutdown();
+            return Result.error("上传失败: " + e.getMessage());
         }
-
-        //获取用户名
-        Long userId = UserHolder.getUser().getId();
-
-        //存icon
-        fileUploadMapper.save(userId,url);
-
-
-        return Result.success(url);  // 返回文件的 URL
     }
 }

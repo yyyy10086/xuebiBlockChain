@@ -65,4 +65,6 @@ public interface UserMapper extends BaseMapper<User> {
     int addPointsById(@Param("userId") Long userId, @Param("amount") int amount);
 
     int updateNickName(@Param("userId") Long userId, @Param("nickName") String nickName);
+
+    int updatePassword(@Param("userId") Long userId, @Param("password") String password);
 }

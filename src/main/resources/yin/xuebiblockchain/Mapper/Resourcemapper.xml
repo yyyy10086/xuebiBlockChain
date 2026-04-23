@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="yin.xuebiblockchain.Mapper.ResourceMapper">
 
-    <!-- 查询所有可借用资源（关键：返回 ownerAddress） -->
+    <!-- 查询所有可借用资源（仅审核通过的） -->
     <select id="findAvailableResources" resultType="yin.xuebiblockchain.Pojo.ResourceDTO">
         SELECT
             r.id,
@@ -23,6 +23,7 @@
         FROM resource r
                  LEFT JOIN user u ON r.owner_id = u.id
         WHERE r.status = 'AVAILABLE'
+          AND r.audit_status = 'APPROVED'
           AND u.public_key IS NOT NULL
         ORDER BY r.borrow_count DESC, r.create_time DESC
     </select>
@@ -45,12 +46,14 @@
             r.create_time AS createTime
         FROM resource r
                  LEFT JOIN user u ON r.owner_id = u.id
-        WHERE r.status = 'AVAILABLE' AND u.public_key IS NOT NULL
+        WHERE r.status = 'AVAILABLE'
+          AND r.audit_status = 'APPROVED'
+          AND u.public_key IS NOT NULL
         ORDER BY r.borrow_count DESC
         LIMIT #{limit}
     </select>
 
-    <!-- 搜索资源 -->
+    <!-- 搜索资源（只返回已审核通过的） -->
     <select id="searchResources" resultType="yin.xuebiblockchain.Pojo.ResourceDTO">
         SELECT
             r.id,
@@ -69,18 +72,19 @@
         FROM resource r
                  LEFT JOIN user u ON r.owner_id = u.id
         WHERE r.status = 'AVAILABLE'
+          AND r.audit_status = 'APPROVED'
           AND u.public_key IS NOT NULL
           AND (r.name LIKE CONCAT('%', #{keyword}, '%')
             OR r.description LIKE CONCAT('%', #{keyword}, '%'))
         ORDER BY r.borrow_count DESC
     </select>
 
-    <!-- 根据ID查询单个资源 -->
+    <!-- 根据ID查询单个资源（审核状态不限） -->
     <select id="findById" resultType="yin.xuebiblockchain.Pojo.Resource">
         SELECT * FROM resource WHERE id = #{id}
     </select>
 
-    <!-- 查询我发布的资源 -->
+    <!-- 查询我发布的资源（无审核限制） -->
     <select id="findByOwnerId" resultType="yin.xuebiblockchain.Pojo.Resource">
         SELECT * FROM resource WHERE owner_id = #{ownerId}
     </select>
@@ -96,12 +100,12 @@
           AND r.status IN ('PENDING', 'LENT')
     </select>
 
-    <!-- 插入新资源 -->
+    <!-- 插入新资源，增加 audit_status 字段 -->
     <insert id="insertResource" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO resource (name, description, resource_type, category, points_cost,
-                              status, owner_id, owner_address, borrow_count, create_time)
+                              status, owner_id, owner_address, borrow_count, audit_status, create_time)
         VALUES (#{name}, #{description}, #{resourceType}, #{category}, #{pointsCost},
-                'AVAILABLE', #{ownerId}, #{ownerAddress}, 0, NOW())
+                'AVAILABLE', #{ownerId}, #{ownerAddress}, 0, #{auditStatus}, NOW())
     </insert>
 
     <!-- 更新资源状态 -->
@@ -113,12 +117,10 @@
         WHERE id = #{id}
     </update>
 
-    <!-- 增加借用次数 -->
     <update id="incrementBorrowCount">
         UPDATE resource SET borrow_count = borrow_count + 1 WHERE id = #{id}
     </update>
 
-    <!-- 新增：查询待确认的资源（用于分享者查看） -->
     <select id="findPendingByOwnerId" resultType="yin.xuebiblockchain.Pojo.Resource">
         SELECT * FROM resource WHERE owner_id = #{ownerId} AND status = 'PENDING'
     </select>
@@ -132,6 +134,7 @@
         WHERE id = #{id}
     </update>
 
+    <!-- 仅返回已审核通过的资源（用于前台展示） -->
     <select id="findAllResources" resultType="yin.xuebiblockchain.Pojo.ResourceDTO">
         SELECT r.id, r.name, r.description, r.resource_type AS resourceType,
                r.category, r.points_cost AS pointsCost, r.status,
@@ -141,6 +144,24 @@
         FROM resource r
                  LEFT JOIN user u ON r.owner_id = u.id
         WHERE r.status != 'OFFLINE'
+          AND r.audit_status = 'APPROVED'
         ORDER BY r.create_time DESC
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM resource WHERE id = #{id}
+    </delete>
+
+    <!-- 管理员审核：更新 audit_status，并按规则变更 status -->
+    <update id="updateAuditStatus">
+        UPDATE resource
+        SET audit_status = #{auditStatus},
+            status = CASE WHEN #{auditStatus} = 'APPROVED' THEN 'AVAILABLE' ELSE 'OFFLINE' END,
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="findPendingResources" resultType="yin.xuebiblockchain.Pojo.Resource">
+        SELECT * FROM resource WHERE audit_status = 'PENDING'
     </select>
 </mapper>

@@ -34,6 +34,10 @@
         LIMIT #{offset}, #{size}
     </select>
 
+    <update id="logicDeletePost">
+        UPDATE post SET is_deleted = 1 WHERE id = #{postId}
+    </update>
+
     <!-- 插入帖子，返回自增ID -->
     <insert id="insertPost" parameterType="yin.xuebiblockchain.Pojo.Post" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO post (user_id, post_title, post_content, creat_time, update_time)

@@ -27,4 +27,6 @@ public interface PostMapper {
     int insertUserLike(@Param("userId") Long userId, @Param("postId") long postId);
 
     int deleteUserLike(@Param("userId") Long userId, @Param("postId") long postId);
+
+    int logicDeletePost(@Param("postId") Long postId);
 }

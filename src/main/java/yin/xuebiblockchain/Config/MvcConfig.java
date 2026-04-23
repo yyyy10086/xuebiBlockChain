@@ -59,8 +59,9 @@ public class MvcConfig implements WebMvcConfigurer {
                         "/userInfo/userAddress",
                         "/userInfo/userFans",
                         "/userInfo/userFollow",
-                        "/userInfo/userVIP"
-                )
+                        "/userInfo/userVIP",
+                        "/uploadAvatar"
+                        )
                 .order(1);
 
         System.out.println("【拦截器已配置】公开接口已放行，需要登录的接口已保护");

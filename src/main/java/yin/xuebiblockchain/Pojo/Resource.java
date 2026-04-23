@@ -104,6 +104,10 @@ public class Resource implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Timestamp borrowEndTime;
 
+    private String auditStatus; // PENDING, APPROVED, REJECTED
+    // 常量
+
+
     // ============ 常量定义 ============
 
     /** 资源类型：电子文档 */
@@ -119,4 +123,8 @@ public class Resource implements Serializable {
     public static final String STATUS_OFFLINE = "OFFLINE";
 
     public static final String STATUS_PENDING = "PENDING";
+
+    public static final String AUDIT_PENDING = "PENDING";
+    public static final String AUDIT_APPROVED = "APPROVED";
+    public static final String AUDIT_REJECTED = "REJECTED";
 }

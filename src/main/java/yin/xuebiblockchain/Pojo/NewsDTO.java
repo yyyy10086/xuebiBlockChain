@@ -16,6 +16,9 @@ public class NewsDTO {
     private String source;
     private String imageUrl;
 
+    private Long authorId;
+    private String authorName;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
 }

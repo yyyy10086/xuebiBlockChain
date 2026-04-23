@@ -36,6 +36,8 @@ public class UserDTO {
     /** 区块链地址（此处与 publicKey 完全一致，统一使用 hex 公钥作为标识） */
     private String address;
 
+    private Integer role;  // 0-普通用户，1-管理员
+
     // getter/setter（lombok @Data 已自动生成，也可手动加）
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }

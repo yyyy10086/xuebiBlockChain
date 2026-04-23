@@ -1,10 +1,12 @@
 package yin.xuebiblockchain.Service.Impl;
 
+import cn.hutool.crypto.digest.BCrypt;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import yin.xuebiblockchain.Mapper.SignInMapper;
 import yin.xuebiblockchain.Mapper.UserMapper;
 import yin.xuebiblockchain.Pojo.Result;
+import yin.xuebiblockchain.Pojo.User;
 import yin.xuebiblockchain.Pojo.UserDTO;
 import yin.xuebiblockchain.Service.UserService;
 import yin.xuebiblockchain.Utils.UserHolder;
@@ -81,6 +83,18 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public Result updatePassword(Long userId, String oldPassword, String newPassword) {
+        User user = userMapper.selectById(userId);
+        if (user == null) return Result.error("用户不存在");
+        if (user.getPassword() == null || !BCrypt.checkpw(oldPassword, user.getPassword())) {
+            return Result.error("旧密码不正确");
+        }
+        String hashed = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+        int rows = userMapper.updatePassword(userId, hashed);
+        if (rows > 0) return Result.success("密码修改成功");
+        return Result.error("密码修改失败");
+    }
     @Override
     public Long getUserId(String nickName) {
         return userMapper.getUserId(nickName);

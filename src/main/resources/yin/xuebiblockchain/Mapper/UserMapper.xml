@@ -68,7 +68,8 @@
             balance,
             student_id AS studentId,
             create_time AS createTime,
-            update_time AS updateTime
+            update_time AS updateTime,
+            role
         FROM user
         WHERE id = #{id}
           AND is_deleted = 0
@@ -88,5 +89,9 @@
 
     <update id="updateNickName">
         UPDATE user SET nick_name = #{nickName} WHERE id = #{userId} AND is_deleted = 0
+    </update>
+
+    <update id="updatePassword">
+        UPDATE user SET password = #{password} WHERE id = #{userId}
     </update>
 </mapper>

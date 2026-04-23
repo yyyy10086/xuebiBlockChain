@@ -8,18 +8,9 @@ import yin.xuebiblockchain.Pojo.ResourceDTO;
 
 import java.util.List;
 
-/**
- * 资源数据库操作接口
- *
- * 【注意】不继承 BaseMapper，所有 SQL 都在 ResourceMapper.xml 中定义。
- * 这样和项目中其他 Mapper（TransactionMapper、PostMapper 等）风格一致。
- */
 @Mapper
 public interface ResourceMapper {
 
-    /**
-     * 根据ID查询资源（替代 BaseMapper.selectById）
-     */
     Resource findById(@Param("id") Long id);
 
     List<ResourceDTO> findAvailableResources();
@@ -48,4 +39,10 @@ public interface ResourceMapper {
                                              @Param("borrowEndTime") Timestamp borrowEndTime);
 
     List<ResourceDTO> findAllResources();
+
+    List<Resource> findPendingResources();
+
+    int updateAuditStatus(@Param("id") Long id, @Param("auditStatus") String status);
+
+    int deleteById(@Param("id") Long id);
 }

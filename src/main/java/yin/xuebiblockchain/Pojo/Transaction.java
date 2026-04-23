@@ -225,7 +225,7 @@ public class Transaction {
      * 这里统一返回 double 以兼容 TransactionServiceImpl 中的强转
      */
     public double getAmount() {
-        return amount;
+        return amount; // amount 是 Integer，自动拆箱为 int，再提升为 double
     }
 
     public void setAmount(Integer amount) {

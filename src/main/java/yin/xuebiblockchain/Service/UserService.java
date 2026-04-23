@@ -24,4 +24,6 @@ public interface UserService {
     Result dailySignIn();
 
     Result updateNickName(Long userId, String nickName);
+
+    Result updatePassword(Long userId, String oldPassword, String newPassword);
 }

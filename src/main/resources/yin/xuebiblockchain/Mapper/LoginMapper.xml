@@ -6,7 +6,7 @@
     <!--    User selectByPhone(@Param("phone") String phone);-->
     <select id="selectByPhone" resultType="yin.xuebiblockchain.Pojo.User">
         select id, phone, password, nick_name AS nickName, icon,
-               public_key AS publicKey, balance, student_id AS studentId
+               public_key AS publicKey, balance, student_id AS studentId,role
         from user where phone = #{phone};
     </select>
 <!--    Integer save(@Param("user") User user);-->

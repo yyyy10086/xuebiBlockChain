@@ -8,4 +8,7 @@ import java.util.List;
 @Mapper
 public interface NewsMapper {
     List<NewsDTO> getNews();
+    int insertNews(NewsDTO news);
+    int updateNews(NewsDTO news);
+    int deleteNews(Long id);
 }
